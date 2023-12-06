@@ -10,6 +10,30 @@ import {
   PokemonErrorBoundary,
 } from '../pokemon'
 
+function useSafeDispatch(dispatch) {
+  // when we create this, is not mounted yet
+  const mountedRef = React.useRef(false)
+
+  // when this effect is called, is not mounted!
+  // the useLayoutEffect garants the function will be called as soon the component is mounted, even before the browser paints the screen. Also ensures the clean up function will be called as soon the component is unmounted
+  React.useLayoutEffect(() => {
+    mountedRef.current = true
+
+    // clean up function that will be called when get unmounted
+    // when this function is called, whe know that is unounted
+    return () => {
+      mountedRef.current = false
+    }
+  }, []) // empty list. so we know that will be called only for mount and unomunted
+
+  return React.useCallback((...args) => {
+    // with this, we know that is mounted. So we dont need to wait on the page tills this load
+    if (mountedRef.current) {
+      dispatch(...args)
+    }
+  }, [dispatch])
+}
+
 // 🐨 this is going to be our generic asyncReducer
 function asyncReducer(state, action) {
   switch (action.type) {
@@ -29,13 +53,16 @@ function asyncReducer(state, action) {
 }
 
 function useAsync(initialState) {
-  const [state, dispatch] = React.useReducer(asyncReducer, {
+  const [state, unsafeDispatch] = React.useReducer(asyncReducer, {
     status: 'idle',
     data: null,
     error: null,
     ...initialState,
   })
 
+  const dispatch = useSafeDispatch(unsafeDispatch)
+
+  // Kent does not recommend using useCallback, because the side effects spred out all over the code base - as this exercise demonstates. Just do it when you are pretty sure you are getting benefits of the value of it.
   const run = React.useCallback(promise => {
     dispatch({type: 'pending'})
     promise.then(
@@ -46,7 +73,7 @@ function useAsync(initialState) {
         dispatch({type: 'rejected', error})
       },
     )
-  }, [])
+  }, [dispatch])
 
   return {...state, run}
 }
