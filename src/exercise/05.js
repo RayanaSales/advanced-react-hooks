@@ -3,23 +3,33 @@
 
 import * as React from 'react'
 
-// 🐨 wrap this in a React.forwardRef and accept `ref` as the second argument
-function MessagesDisplay({messages}) {
+function MessagesDisplay({messages}, ref) {
   const containerRef = React.useRef()
   React.useLayoutEffect(() => {
     scrollToBottom()
   })
 
-  // 💰 you're gonna want this as part of your imperative methods
-  // function scrollToTop() {
-  //   containerRef.current.scrollTop = 0
-  // }
+  function scrollToTop() {
+    containerRef.current.scrollTop = 0
+  }
   function scrollToBottom() {
     containerRef.current.scrollTop = containerRef.current.scrollHeight
   }
 
-  // 🐨 call useImperativeHandle here with your ref and a callback function
-  // that returns an object with scrollToTop and scrollToBottom
+  // this is a way for you to expose an imperative api, to your declarative component.
+  React.useImperativeHandle(ref, () => ({
+    scrollToTop,
+    scrollToBottom,
+  }))
+
+  /** WE COULD DO IT THIS LIKE THE EXAMPLE ABOVE, BUT IT NOT SAFE.
+   */
+  // React.useLayoutEffect(() => {
+  //   ref.current = {
+  //     scrollToTop,
+  //     scrollToBottom,
+  //   }
+  // })
 
   return (
     <div ref={containerRef} role="log">
@@ -32,6 +42,12 @@ function MessagesDisplay({messages}) {
     </div>
   )
 }
+
+// THIS IS THE FIRST THING WE NEED TO DO FOR USING THE useImperativeHandle.
+// WE NEED TO FORWARD THE REF, USING THE forwardRef. After this, you will be able to accept the ref, on the component - check line 6
+// AFTER THIS YOU USE THE useImperativeHandle ON THE REF, with all the functions you need assigned to the ref.
+// eslint-disable-next-line no-func-assign
+MessagesDisplay = React.forwardRef(MessagesDisplay)
 
 function App() {
   const messageDisplayRef = React.useRef()

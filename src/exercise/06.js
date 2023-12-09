@@ -3,10 +3,14 @@
 
 import * as React from 'react'
 
+// this is a performance improvment. Use this when the calculation you are doing here is expensive. This will prevent the code to run for the final user.
+const formatDebugValue = ({query, state}) => `\`${query}\` => ${state}`
+
 function useMedia(query, initialState = false) {
   const [state, setState] = React.useState(initialState)
-  // 🐨 call React.useDebugValue here.
-  // 💰 here's the formatted label I use: `\`${query}\` => ${state}`
+
+  // THIS JUSR WORKS INSIDE CUSTOM HOOKS. DONT EVEN TRY USING ANYWHERE ELSE
+  React.useDebugValue({query, state}, formatDebugValue)
 
   React.useEffect(() => {
     let mounted = true
